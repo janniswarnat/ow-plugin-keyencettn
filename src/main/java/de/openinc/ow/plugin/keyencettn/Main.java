@@ -14,13 +14,14 @@ import de.openinc.ow.middleware.services.DataService;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 import static io.javalin.apibuilder.ApiBuilder.post;
-import static java.time.temporal.ChronoUnit.MINUTES;
 
 public class Main implements OpenWarePlugin, OpenWareAPI {
 
@@ -60,9 +61,23 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
 				String timestamp = payload.getString("received_at");
 				OpenWareInstance.getInstance()
 						.logTrace("timestamp from payload.data.received_at = "+timestamp);
-				Instant instant = Instant.parse(timestamp);
-				instant = instant.truncatedTo(MINUTES);
-				long epochMilli = instant.toEpochMilli();
+				ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME);
+
+				// Calculate rounding to the nearest ten minutes
+				int minute = zonedDateTime.getMinute();
+				int roundedMinutes = ((minute + 5) / 10) * 10; // Adding 5 before division for rounding
+				zonedDateTime = zonedDateTime
+						.with(ChronoField.MINUTE_OF_HOUR, roundedMinutes % 60) // Ensure minutes wrap correctly
+						.with(ChronoField.SECOND_OF_MINUTE, 0)
+						.with(ChronoField.NANO_OF_SECOND, 0);
+
+				// Adjust the hour if necessary (when rounding occurs at xx:55 to xx:00)
+				if (roundedMinutes == 60) {
+					zonedDateTime = zonedDateTime.plusHours(1);
+				}
+
+				// Convert to epoch milliseconds directly
+				long epochMilli = zonedDateTime.toInstant().toEpochMilli();
 				OpenWareInstance.getInstance()
 						.logTrace("epochMilli = "+epochMilli);
 
@@ -121,8 +136,14 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
 								dim.setName("flow");
 								val20MinutesAgo.add(dim);
 								break;
-							default:
+							case "flow":
 								val.add(dim);
+								vTypes.add(dim);
+								break;
+							case "receivingESPNOWMessages":
+								val.add(dim);
+								val10MinutesAgo.add(dim);
+								val20MinutesAgo.add(dim);
 								vTypes.add(dim);
 								break;
 						}
@@ -158,7 +179,11 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
 				OpenWareInstance.getInstance()
 						.logTrace("existingIItem20MinutesAgo = "+existingItem20MinutesAgo);
 
-				List<OpenWareValue> values10MinutesAgo = existingItem10MinutesAgo.value();
+				List<OpenWareValue> values10MinutesAgo = new ArrayList<OpenWareValue>();
+				if(existingItem10MinutesAgo != null)
+				{
+					values10MinutesAgo = existingItem10MinutesAgo.value();
+				}
 
 				if(!values10MinutesAgo.isEmpty())
 				{
@@ -168,23 +193,27 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
 					if(flow10MinutesAgo == 0.0)
 					{
 						OpenWareInstance.getInstance()
-								.logTrace("Zero was delivered 10 minutes ago ("+(epochMilli-600000));
+								.logTrace("Zero was delivered 10 minutes ago ("+(epochMilli-600000)+"), replace");
 						DataService.onNewData(item10MinutesAgo);
 					}
 					else
 					{
 						OpenWareInstance.getInstance()
-								.logTrace("Some value was delivered 10 minutes ago, do not replace ("+(epochMilli-600000));
+								.logTrace("Some value was delivered 10 minutes ago ("+(epochMilli-600000)+"), do not replace");
 					}
 				}
 				else
 				{
 					OpenWareInstance.getInstance()
-							.logTrace("No value was delivered 10 minutes ago ("+(epochMilli-600000));
+							.logTrace("No value was delivered 10 minutes ago ("+(epochMilli-600000)+")");
 					DataService.onNewData(item10MinutesAgo);
 				}
 
-				List<OpenWareValue> values20MinutesAgo = existingItem20MinutesAgo.value();
+				List<OpenWareValue> values20MinutesAgo = new ArrayList<OpenWareValue>();
+				if(existingItem20MinutesAgo != null)
+				{
+					values20MinutesAgo = existingItem20MinutesAgo.value();
+				}
 
 				if(!values20MinutesAgo.isEmpty())
 				{
@@ -194,19 +223,19 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
 					if(flow20MinutesAgo == 0.0)
 					{
 						OpenWareInstance.getInstance()
-								.logTrace("Zero was delivered 20 minutes ago, replace");
+								.logTrace("Zero was delivered 20 minutes ago ("+(epochMilli-1200000)+"), replace");
 						DataService.onNewData(item20MinutesAgo);
 					}
 					else
 					{
 						OpenWareInstance.getInstance()
-								.logTrace("Some value was delivered 20 minutes ago, do not replace");
+								.logTrace("Some value was delivered 20 minutes ago ("+(epochMilli-1200000)+"), do not replace");
 					}
 				}
 				else
 				{
 					OpenWareInstance.getInstance()
-							.logTrace("No value was delivered 20 minutes ago");
+							.logTrace("No value was delivered 20 minutes ago ("+(epochMilli-1200000)+")");
 					DataService.onNewData(item20MinutesAgo);
 				}
 
