@@ -169,16 +169,16 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
 //				OpenWareInstance.getInstance()
 //						.logTrace("existingIItem20MinutesAgo = "+existingItem20MinutesAgo);
 
-                List<OpenWareValue> valuesLastHour = new ArrayList<OpenWareValue>();
+                List<OpenWareValue> valuesLastHalfHour = new ArrayList<OpenWareValue>();
                 if (existingItemsLastHalfHour != null) {
-                    valuesLastHour = existingItemsLastHalfHour.value();
+                    valuesLastHalfHour = existingItemsLastHalfHour.value();
                 }
 
                 boolean deliverOneIntervalBefore = true;
                 boolean deliverTwoIntervalsBefore = true;
 
-                for (OpenWareValue value : valuesLastHour) {
-                    OpenWareInstance.getInstance().logTrace("OpenWareValue from last hour = " + value);
+                for (OpenWareValue value : valuesLastHalfHour) {
+                    OpenWareInstance.getInstance().logTrace("OpenWareValue from last half hour = " + value);
                     OpenWareValueDimension dim = value.get(0);
                     OpenWareInstance.getInstance().logTrace("OpenWareValueDimension = " + dim);
                     double intervalId = ((OpenWareNumber) dim).value();
@@ -204,31 +204,6 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
                     OpenWareInstance.getInstance().logTrace("No value was delivered 20 minutes ago (" + (epochMilli - 1200000) + "), deliver now");
                     DataService.onNewData(item20MinutesAgo);
                 }
-
-
-//				if(!valuesLastHour.isEmpty())
-//				{
-//					OpenWareValueDimension dim10MinutesAgo = valuesLastHour.get(0).get(0);
-//					double liters10MinutesAgo = ((OpenWareNumber) dim10MinutesAgo).value();
-//
-////					if(liters10MinutesAgo == 0.0)
-////					{
-////						OpenWareInstance.getInstance()
-////								.logTrace("Zero was delivered 10 minutes ago ("+(epochMilli-600000)+"), replace");
-////						DataService.onNewData(item10MinutesAgo);
-////					}
-////					else
-////					{
-//					OpenWareInstance.getInstance()
-//							.logTrace("Some value was delivered 10 minutes ago ("+(epochMilli-600000)+"), do not replace");
-////					}
-//				}
-//				else
-//				{
-//					OpenWareInstance.getInstance()
-//							.logTrace("No value was delivered 10 minutes ago ("+(epochMilli-600000)+")");
-//					DataService.onNewData(item10MinutesAgo);
-//				}
 
 //				List<OpenWareValue> values10MinutesAgo = new ArrayList<OpenWareValue>();
 //				if(existingItem10MinutesAgo != null)
