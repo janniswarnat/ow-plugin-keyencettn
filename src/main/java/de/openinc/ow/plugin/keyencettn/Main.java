@@ -51,59 +51,11 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
                 String name = loraIds.getJSONObject("application_ids").getString("application_id") + "_" + loraIds.getString("dev_eui");
                 String id = loraIds.getJSONObject("application_ids").getString("application_id") + "_" + loraIds.getString("dev_eui");
 
-//				String timestamp = payload.getString("received_at");
-//				OpenWareInstance.getInstance()
-//						.logTrace("timestamp from payload.data.received_at = "+timestamp);
-//				ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME);
-//
-//				// Calculate rounding to the nearest ten minutes
-//				int minute = zonedDateTime.getMinute();
-//				int roundedMinutes = ((minute + 5) / 10) * 10; // Adding 5 before division for rounding
-//				zonedDateTime = zonedDateTime
-//						.with(ChronoField.MINUTE_OF_HOUR, roundedMinutes % 60) // Ensure minutes wrap correctly
-//						.with(ChronoField.SECOND_OF_MINUTE, 0)
-//						.with(ChronoField.NANO_OF_SECOND, 0);
-//
-//				// Adjust the hour if necessary (when rounding occurs at xx:55 to xx:00)
-//				if (roundedMinutes == 60) {
-//					zonedDateTime = zonedDateTime.plusHours(1);
-//				}
-//
-//				// Convert to epoch milliseconds directly
-//				long epochMilli = zonedDateTime.toInstant().toEpochMilli();
-//				OpenWareInstance.getInstance()
-//						.logTrace("epochMilli = "+epochMilli);
-
                 if (decodedFields.has("idSuffix")) {
                     id = id + decodedFields.getString("idSuffix");
                     decodedFields.remove("idSuffix");
                 }
 
-//				if (decodedFields.has("latitude") || decodedFields.has("lat")) {
-//					if (decodedFields.has("longitude") || decodedFields.has("lon")) {
-//						String template = "{\r\n" + "      \"type\": \"Feature\",\r\n" + "      \"geometry\": {\r\n"
-//								+ "        \"type\": \"Point\",\r\n" + "        \"coordinates\": [%s, %s, %s]\r\n"
-//								+ "      },\r\n" + "      \"properties\": {\r\n" + "        \"name\": %s,\r\n"
-//								+ "        \"rssi\": %s\r\n" + "        \r\n" + "      }\r\n" + "    }   ";
-//						double lon = decodedFields.has("lon") ? decodedFields.getDouble("lon")
-//								: decodedFields.getDouble("longitude");
-//						double lat = decodedFields.has("lat") ? decodedFields.getDouble("lat")
-//								: decodedFields.getDouble("latitude");
-//						double alt = decodedFields.has("alt") ? decodedFields.getDouble("alt") : 0.0;
-//						if (alt == 0.0) {
-//							alt = decodedFields.has("altitude") ? decodedFields.getDouble("altitude") : 0.0;
-//						}
-//						String geo = String.format(template, lon, lat, alt, name, rssi);
-//						JSONObject geoJson = new JSONObject(geo);
-//						decodedFields.remove("latitude");
-//						decodedFields.remove("lat");
-//						decodedFields.remove("lon");
-//						decodedFields.remove("longitude");
-//						decodedFields.remove("alt");
-//						decodedFields.remove("altitude");
-//						decodedFields.put("parsedGeo", geoJson);
-//					}
-//				}
                 ArrayList<OpenWareValueDimension> vTypes = new ArrayList();
                 long epochMilli = System.currentTimeMillis();
                 OpenWareValue val = new OpenWareValue(epochMilli);
@@ -124,16 +76,16 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
                                 dim.setName("intervalId");
                                 val20MinutesAgo.add(dim);
                                 break;
-                            case "litersOneIntervalBefore":
-                                dim.setName("liters");
+                            case "flowOneIntervalBefore":
+                                dim.setName("flow");
                                 val10MinutesAgo.add(dim);
                                 break;
-                            case "litersTwoIntervalsBefore":
-                                dim.setName("liters");
+                            case "flowTwoIntervalsBefore":
+                                dim.setName("flow");
                                 val20MinutesAgo.add(dim);
                                 break;
                             case "intervalId":
-                            case "liters":
+                            case "flow":
                                 val.add(dim);
                                 vTypes.add(dim);
                                 break;
@@ -155,19 +107,8 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
                 OpenWareInstance.getInstance().logTrace("item10MinutesAgo = " + item10MinutesAgo);
                 OpenWareInstance.getInstance().logTrace("item20MinutesAgo = " + item20MinutesAgo);
 
-                //item.streamPrint(System.out);
-                //item10MinutesAgo.streamPrint(System.out);
-                //item20MinutesAgo.streamPrint(System.out);
-
                 OpenWareDataItem existingItemsLastHalfHour = DataService.getHistoricalSensorData(name, source, epochMilli - 1800000, epochMilli);
-                //OpenWareDataItem existingItem10MinutesAgo = DataService.getHistoricalSensorData(name, source, epochMilli-600000, epochMilli-600000);
-                //OpenWareDataItem existingItem20MinutesAgo = DataService.getHistoricalSensorData(name, source, epochMilli-1200000, epochMilli-1200000);
-
                 OpenWareInstance.getInstance().logTrace("existingItemsLastHalfHour = " + existingItemsLastHalfHour);
-//				OpenWareInstance.getInstance()
-//						.logTrace("existingIItem10MinutesAgo = "+existingItem10MinutesAgo);
-//				OpenWareInstance.getInstance()
-//						.logTrace("existingIItem20MinutesAgo = "+existingItem20MinutesAgo);
 
                 List<OpenWareValue> valuesLastHalfHour = new ArrayList<OpenWareValue>();
                 if (existingItemsLastHalfHour != null) {
@@ -204,67 +145,6 @@ public class Main implements OpenWarePlugin, OpenWareAPI {
                     OpenWareInstance.getInstance().logTrace("No value was delivered 20 minutes ago (" + (epochMilli - 1200000) + "), deliver now");
                     DataService.onNewData(item20MinutesAgo);
                 }
-
-//				List<OpenWareValue> values10MinutesAgo = new ArrayList<OpenWareValue>();
-//				if(existingItem10MinutesAgo != null)
-//				{
-//					values10MinutesAgo = existingItem10MinutesAgo.value();
-//				}
-//
-//				if(!values10MinutesAgo.isEmpty())
-//				{
-//					OpenWareValueDimension dim10MinutesAgo = values10MinutesAgo.get(0).get(0);
-//					double liters10MinutesAgo = ((OpenWareNumber) dim10MinutesAgo).value();
-//
-////					if(liters10MinutesAgo == 0.0)
-////					{
-////						OpenWareInstance.getInstance()
-////								.logTrace("Zero was delivered 10 minutes ago ("+(epochMilli-600000)+"), replace");
-////						DataService.onNewData(item10MinutesAgo);
-////					}
-////					else
-////					{
-//						OpenWareInstance.getInstance()
-//								.logTrace("Some value was delivered 10 minutes ago ("+(epochMilli-600000)+"), do not replace");
-////					}
-//				}
-//				else
-//				{
-//					OpenWareInstance.getInstance()
-//							.logTrace("No value was delivered 10 minutes ago ("+(epochMilli-600000)+")");
-//					DataService.onNewData(item10MinutesAgo);
-//				}
-
-//				List<OpenWareValue> values20MinutesAgo = new ArrayList<OpenWareValue>();
-//				if(existingItem20MinutesAgo != null)
-//				{
-//					values20MinutesAgo = existingItem20MinutesAgo.value();
-//				}
-//
-//				if(!values20MinutesAgo.isEmpty())
-//				{
-//					OpenWareValueDimension dim20MinutesAgo = values20MinutesAgo.get(0).get(0);
-//					double liters20MinutesAgo = ((OpenWareNumber) dim20MinutesAgo).value();
-//
-////					if(liters20MinutesAgo == 0.0)
-////					{
-////						OpenWareInstance.getInstance()
-////								.logTrace("Zero was delivered 20 minutes ago ("+(epochMilli-1200000)+"), replace");
-////						DataService.onNewData(item20MinutesAgo);
-////					}
-////					else
-////					{
-//						OpenWareInstance.getInstance()
-//								.logTrace("Some value was delivered 20 minutes ago ("+(epochMilli-1200000)+"), do not replace");
-////					}
-//				}
-//				else
-//				{
-//					OpenWareInstance.getInstance()
-//							.logTrace("No value was delivered 20 minutes ago ("+(epochMilli-1200000)+")");
-//					DataService.onNewData(item20MinutesAgo);
-//				}
-
 
                 DataService.onNewData(item);
 
